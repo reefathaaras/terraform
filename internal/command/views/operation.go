@@ -102,10 +102,12 @@ func (v *OperationHuman) Plan(plan *plans.Plan, schemas *terraform.Schemas) {
 		}
 
 		jplan := jsonformat.Plan{
-			OutputChanges:   outputs,
-			ResourceChanges: changed,
-			ResourceDrift:   drift,
-			ProviderSchemas: jsonprovider.MarshalForRenderer(schemas),
+			PlanFormatVersion:     jsonplan.FormatVersion,
+			ProviderFormatVersion: jsonprovider.FormatVersion,
+			OutputChanges:         outputs,
+			ResourceChanges:       changed,
+			ResourceDrift:         drift,
+			ProviderSchemas:       jsonprovider.MarshalForRenderer(schemas),
 		}
 
 		renderer.RenderPlan(jplan)
