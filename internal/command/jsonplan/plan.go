@@ -121,6 +121,47 @@ type variable struct {
 	Value json.RawMessage `json:"value,omitempty"`
 }
 
+// MarshalForRenderer returns the pre-json encoding changes of the requested
+// plan, in a format available to the structured renderer.
+func MarshalForRenderer(
+	p *plans.Plan,
+	schemas *terraform.Schemas,
+) (map[string]Change, []ResourceChange, []ResourceChange, error) {
+	output := newPlan()
+
+	if err := output.marshalOutputChanges(p.Changes); err != nil {
+		return nil, nil, nil, err
+	}
+
+	var err error
+	if output.ResourceChanges, err = output.marshalResourceChanges(p.Changes.Resources, schemas); err != nil {
+		return nil, nil, nil, err
+	}
+
+	if len(p.DriftedResources) > 0 {
+		// In refresh-only mode, we render all resources marked as drifted,
+		// including those which have moved without other changes. In other plan
+		// modes, move-only changes will be included in the planned changes, so
+		// we skip them here.
+		var driftedResources []*plans.ResourceInstanceChangeSrc
+		if p.UIMode == plans.RefreshOnlyMode {
+			driftedResources = p.DriftedResources
+		} else {
+			for _, dr := range p.DriftedResources {
+				if dr.Action != plans.NoOp {
+					driftedResources = append(driftedResources, dr)
+				}
+			}
+		}
+		output.ResourceDrift, err = output.marshalResourceChanges(driftedResources, schemas)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	return output.OutputChanges, output.ResourceChanges, output.ResourceDrift, nil
+}
+
 // Marshal returns the json encoding of a terraform plan.
 func Marshal(
 	config *configs.Config,
