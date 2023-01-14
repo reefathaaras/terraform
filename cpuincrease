@@ -1,0 +1,33 @@
+# Declaring the Provider Requirements
+
+resource "vcd_vm_sizing_policy" "cpuSize" {
+  user           = var.vsphere_user
+  password       = var.vsphere_password
+  vsphere_server = var.vsphere_server
+  name           = "cpu-size"
+  description    = "max size"
+
+  # If you have a self-signed cert
+  allow_unverified_ssl = true
+}
+
+data "vsphere_datastore" "LinuxDS077" {
+  name          = "LinuxDS077"
+}
+
+data "vsphere_compute_cluster" " dsc.Linux01" {
+  name          = " dsc.Linux01"
+}
+
+resource "vsphere_virtual_machine" "vm" {
+  name             = "linuxtestvm"
+ # resource_pool_id = data.vsphere_compute_cluster.cluster.resource_pool_id
+ #datastore_id     = data.vsphere_datastore.datastore.id
+
+  cpu {
+    limit_in_mhz          = "2400"
+    speed_in_mhz          = "16000"
+    datacenter            = "LinuxDS077"
+    datastore             = "dsc.Linux01"
+   }
+}
